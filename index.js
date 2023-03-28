@@ -56,7 +56,7 @@ client.on("messageCreate", async (msg) => {
                         return;
                     }else{
                         const link = result[0].link;
-                        msgEmbed(msg,link);
+                        msgEmbed(msg, link, nickname);
                     }
                 });
             }
@@ -72,7 +72,7 @@ client.on("messageCreate", async (msg) => {
                 function (error, results, fields) {
                     if (error) throw error;
                     msg.reply("Saved")
-                    msgEmbed(msg, link);
+                    msgEmbed(msg, link, args[2]);
                 }
             );
         }
@@ -95,30 +95,67 @@ client.on("messageCreate", async (msg) => {
         msg.channel.send({ embeds: [embed] });
   }
 
-  const msgEmbed = async (msg, link) => {
+  const msgEmbed = async (msg, link, nickname) => {
     const thumbnailLink = await getCollectionThumbnailLink(link);
     const nftId = link.split("/").pop();
     const apiUrl = `http://api-mainnet.magiceden.dev/v2/collections/${nftId}/stats`;
     try {
         const response = await axios.get(apiUrl)
-
+        
+        let lastPrice, variance, gapPrice;
+        const nftData = response.data;
+        const currentPrice = Math.floor(nftData.floorPrice/1000000000 * 100)/100;
         if(response.status !== 200){
             msgInstruction(msg);
         }
 
-        const nftData = response.data;
+        const gapPricePromise = new Promise((resolve, reject) => {
+            connection.query(`SELECT * FROM nft WHERE link="${link}"`, async function(error, result, field) {
+                if (error) reject(error);
+                lastPrice = result[0].lastCallPrice;
+                if(lastPrice === null){
+                    lastPrice = 0;
+                }
+                gapPrice = lastPrice - currentPrice;
+                resolve(gapPrice);
+            });
+        });
+
+        gapPrice = Math.floor(await gapPricePromise * 100) / 100;
+
+        if(gapPrice > 0){
+            gapPrice = "- " + String(gapPrice);
+        }else if(gapPrice < 0){
+            gapPrice = "+ " + String((-1) * gapPrice);
+        }
+        console.log(gapPrice)
+        
+        if(!gapPrice)
+            variance = false;
+        else
+            variance = true;
+
         const embed = new EmbedBuilder()
         .setColor("#F7921E")
         .setTitle(`${nftData.symbol}`)
         .setURL(link)
         .setThumbnail(thumbnailLink)
         .addFields(
-            { name: 'Price', value: `${Math.floor(nftData.floorPrice/1000000000 * 100)/100} SOL`, inline: true },
+            { name: 'Price', value: `${currentPrice} SOL`, inline: true },
+            variance ? { name: 'Gap of Price', value: `${gapPrice} SOL`, inline: true } : { name: 'Gap of Price', value: `same as before`, inline: true },
             { name: 'Listing', value: `${nftData.listedCount}`, inline: true },
         )
         .setTimestamp()
         .setFooter({ text: 'Powerd By viviviviviid', iconURL: 'https://gateway.pinata.cloud/ipfs/QmUogCrCHfFV2mdPcuDbpw9tEPyY9anXTQQUohpPaQv2tn?_gl=1*1oj093v*_ga*NGQ1ZDcwYjEtYzQyZC00ODM0LWJiOWUtM2QwOGI3NGMxYWI3*_ga_5RMPXG14TE*MTY3OTc0OTQ2MC4xLjEuMTY3OTc0OTU2Ni41OC4wLjA.' });
         msg.channel.send({ embeds: [embed] });
+
+        connection.query(
+            `UPDATE nft SET lastCallPrice = ${currentPrice} WHERE nickname = "${nickname}"`,
+            function (error, results, fields) {
+                if (error) throw error;
+            }
+        );
+
     } catch (error) {
         
     }
@@ -132,3 +169,4 @@ client.on("messageCreate", async (msg) => {
   }
 
 client.login(process.env.TOKEN);
+
