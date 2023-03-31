@@ -40,23 +40,23 @@ client.on("messageCreate", async (msg) => {
         });
 		const args = msg.content.split(" ");
 		if(args.length === 1){
-			msgInstruction(msg);
+			msgInstruction(msg, 'me');
 			return;
 		}
 		if(args[1] !== 'save'){
 			if(args.length > 2){
-				msgInstruction(msg);
+				msgInstruction(msg, 'me');
 				return;
 			}else{
                 const nickname = args[1];
                 connection.query(`SELECT * FROM nft WHERE nickname="${nickname}"`, async function(error, result, field) {
                     if (error) throw error;
                     if(!result.length){
-                        msgInstruction(msg);
+                        msgInstruction(msg, 'me');
                         return;
                     }else{
                         const link = result[0].link;
-                        msgEmbed(msg, link, nickname);
+                        msgEmbed4Nft(msg, link, nickname);
                     }
                 });
             }
@@ -64,7 +64,7 @@ client.on("messageCreate", async (msg) => {
             const link = args[3];
             const check = await checkEnableLink(msg, link);
             if(!check){
-                msgInstruction(msg);
+                msgInstruction(msg, 'me');
                 return;
             }       
             connection.query(
@@ -72,10 +72,42 @@ client.on("messageCreate", async (msg) => {
                 function (error, results, fields) {
                     if (error) throw error;
                     msg.reply("Saved")
-                    msgEmbed(msg, link, args[2]);
+                    msgEmbed4Nft(msg, link, args[2]);
                 }
             );
         }
+    }else if (msg.content.startsWith(".coin")) {
+        const args = msg.content.split(" ");
+        if(args.length > 2 || args.length === 1){
+            msgInstruction(msg, 'coin');
+        }
+        const sig = args.pop();
+        const upperSig = sig.toUpperCase();
+
+        const apiUrl_krw = `https://crix-api-endpoint.upbit.com/v1/crix/candles/days/?code=CRIX.UPBIT.KRW-${sig}`;
+        const apiUrl_usd = `https://crix-api-endpoint.upbit.com/v1/crix/candles/days/?code=CRIX.UPBIT.USDT-${sig}`;
+        console.log([typeof apiUrl_krw,apiUrl_usd])
+        try {
+            const response_krw = await axios.get(apiUrl_krw);
+            const krwPrice = priceToString(Math.floor(response_krw.data[0].tradePrice));
+            const response_usd = await axios.get(apiUrl_usd);
+            const usdPrice = priceToString(Math.floor(response_usd.data[0].tradePrice));
+
+            const embed = new EmbedBuilder()
+            .setColor("#F7921E")
+            .setTitle(`${upperSig} Price`)
+            .addFields(
+                { name: 'USD', value: `${usdPrice} $`, inline: true },
+                { name: 'KRW', value: `${krwPrice} ₩`, inline: true },
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Powerd By viviviviviid', iconURL: 'https://gateway.pinata.cloud/ipfs/QmUogCrCHfFV2mdPcuDbpw9tEPyY9anXTQQUohpPaQv2tn?_gl=1*1oj093v*_ga*NGQ1ZDcwYjEtYzQyZC00ODM0LWJiOWUtM2QwOGI3NGMxYWI3*_ga_5RMPXG14TE*MTY3OTc0OTQ2MC4xLjEuMTY3OTc0OTU2Ni41OC4wLjA.' });
+            msg.channel.send({ embeds: [embed] });
+
+        }catch (error) {
+            msgInstruction(msg, 'coin')
+        }
+
     }
   });
   
@@ -86,16 +118,30 @@ client.on("messageCreate", async (msg) => {
 	return thumbnailLink;
   }
 
-  const msgInstruction = (msg) => {
-	const embed = new EmbedBuilder()
+  function priceToString(price) {
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+  const msgInstruction = (msg, type) => {
+    if(type === 'me'){
+        const embed = new EmbedBuilder()
 		.setColor("#F7921E")
 		.setTitle("Error\nIncorrect command or was not saved.\n\nHow to use\n .me save 유츠 https://magiceden.io/marketplace/y00ts")
 		.setTimestamp()
 		.setFooter({ text: 'Powerd By viviviviviid', iconURL: 'https://gateway.pinata.cloud/ipfs/QmUogCrCHfFV2mdPcuDbpw9tEPyY9anXTQQUohpPaQv2tn?_gl=1*1oj093v*_ga*NGQ1ZDcwYjEtYzQyZC00ODM0LWJiOWUtM2QwOGI3NGMxYWI3*_ga_5RMPXG14TE*MTY3OTc0OTQ2MC4xLjEuMTY3OTc0OTU2Ni41OC4wLjA.' });
         msg.channel.send({ embeds: [embed] });
+    }else if(type === 'coin'){
+        const embed = new EmbedBuilder()
+		.setColor("#F7921E")
+		.setTitle("Error\nIncorrect Command or incorrect coin signature.\n\nHow to use\n.coin eth\n.coin ETH")
+		.setTimestamp()
+		.setFooter({ text: 'Powerd By viviviviviid', iconURL: 'https://gateway.pinata.cloud/ipfs/QmUogCrCHfFV2mdPcuDbpw9tEPyY9anXTQQUohpPaQv2tn?_gl=1*1oj093v*_ga*NGQ1ZDcwYjEtYzQyZC00ODM0LWJiOWUtM2QwOGI3NGMxYWI3*_ga_5RMPXG14TE*MTY3OTc0OTQ2MC4xLjEuMTY3OTc0OTU2Ni41OC4wLjA.' });
+        msg.channel.send({ embeds: [embed] });
+        console.log("Instruction for coin")
+    }
   }
 
-  const msgEmbed = async (msg, link, nickname) => {
+  const msgEmbed4Nft = async (msg, link, nickname) => {
     const thumbnailLink = await getCollectionThumbnailLink(link);
     const nftId = link.split("/").pop();
     const apiUrl = `http://api-mainnet.magiceden.dev/v2/collections/${nftId}/stats`;
