@@ -132,6 +132,8 @@ client.on("messageCreate", async (msg) => {
             msgInstruction(msg, 'coin')
         }
 
+    }else if (msg.content.startsWith(".exit")) {
+        msg.reply("The server will shut down")
     }
   });
 
