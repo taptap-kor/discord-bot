@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const axios = require("axios");
 const cheerio = require('cheerio');
+const request = require('request');
 const mysql = require('mysql2');
 const CreateDB = require('./create-db.js');
 require('dotenv').config();
@@ -83,33 +84,63 @@ client.on("messageCreate", async (msg) => {
         }
         const sig = args.pop();
         const upperSig = sig.toUpperCase();
+        console.log(upperSig)
 
-        const apiUrl_krw = `https://crix-api-endpoint.upbit.com/v1/crix/candles/days/?code=CRIX.UPBIT.KRW-${sig}`;
-        const apiUrl_usd = `https://crix-api-endpoint.upbit.com/v1/crix/candles/days/?code=CRIX.UPBIT.USDT-${sig}`;
-        console.log([typeof apiUrl_krw,apiUrl_usd])
         try {
-            const response_krw = await axios.get(apiUrl_krw);
-            const krwPrice = priceToString(Math.floor(response_krw.data[0].tradePrice));
-            const response_usd = await axios.get(apiUrl_usd);
-            const usdPrice = priceToString(Math.floor(response_usd.data[0].tradePrice));
+            const response_usd = await axios.get(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${upperSig}&convert=USD`, { 
+                headers: {
+                    'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_KEY,
+                },
+            });
+            const data_usd = response_usd.data.data[upperSig].quote['USD'];
+
+            const response_krw = await axios.get(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${upperSig}&convert=KRW`, { 
+                headers: {
+                    'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_KEY,
+                },
+            });
+            const data_krw = response_krw.data.data[upperSig].quote['KRW'];
+            console.log(data_krw)
+
+            const response_btc = await axios.get(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${upperSig}&convert=BTC`, { 
+                headers: {
+                    'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_KEY,
+                },
+            });
+            const data_btc = response_btc.data.data[upperSig].quote['BTC'];
+
+            console.log("hello")
 
             const embed = new EmbedBuilder()
             .setColor("#F7921E")
             .setTitle(`${upperSig} Price`)
             .addFields(
-                { name: 'USD', value: `${usdPrice} $`, inline: true },
-                { name: 'KRW', value: `${krwPrice} ₩`, inline: true },
+                { name: 'KRW', value: `${priceToString(data_krw.price.toFixed(0))} ₩`, inline: true },
+                { name: 'USD', value: `${priceToString(data_usd.price.toFixed(3))} $`, inline: true },
+                { name: 'BTC', value: `${data_btc.price.toFixed(10)} ₿`, inline: true },
+                { name: '1h', value: `${signChecker(data_usd.percent_change_1h.toFixed(2))}%`, inline: true },
+                { name: '24h', value: `${signChecker(data_usd.percent_change_24h.toFixed(2))}%`, inline: true },
+                { name: '7d', value: `${signChecker(data_usd.percent_change_7d.toFixed(2))}%`, inline: true },
+                // { name: '30d', value: `${data_usd.percent_change_30d.toFixed(2)}%`, inline: true },
             )
             .setTimestamp()
             .setFooter({ text: 'Powerd By viviviviviid', iconURL: 'https://gateway.pinata.cloud/ipfs/QmUogCrCHfFV2mdPcuDbpw9tEPyY9anXTQQUohpPaQv2tn?_gl=1*1oj093v*_ga*NGQ1ZDcwYjEtYzQyZC00ODM0LWJiOWUtM2QwOGI3NGMxYWI3*_ga_5RMPXG14TE*MTY3OTc0OTQ2MC4xLjEuMTY3OTc0OTU2Ni41OC4wLjA.' });
             msg.channel.send({ embeds: [embed] });
 
         }catch (error) {
+            console.log(error)
             msgInstruction(msg, 'coin')
         }
 
     }
   });
+
+  const signChecker = (str) => {
+    if(str[0] !== '-')
+        return '+' + str;
+    else
+        return str;
+  }
   
   async function getCollectionThumbnailLink(url) {
 	const response = await axios.get(url);
@@ -188,7 +219,7 @@ client.on("messageCreate", async (msg) => {
         .setThumbnail(thumbnailLink)
         .addFields(
             { name: 'Price', value: `${currentPrice} SOL`, inline: true },
-            variance ? { name: 'Gap of Price', value: `${gapPrice} SOL`, inline: true } : { name: 'Gap of Price', value: `same as before`, inline: true },
+            variance ? { name: 'Gap of Price', value: `${gapPrice} SOL`, inline: true } : { name:'Gap of Price', value: `same as before`, inline: true },
             { name: 'Listing', value: `${nftData.listedCount}`, inline: true },
         )
         .setTimestamp()
@@ -199,7 +230,7 @@ client.on("messageCreate", async (msg) => {
             `UPDATE nft SET lastCallPrice = ${currentPrice} WHERE nickname = "${nickname}"`,
             function (error, results, fields) {
                 if (error) throw error;
-            }
+            } 
         );
 
     } catch (error) {
