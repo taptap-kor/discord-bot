@@ -59,35 +59,35 @@ client.on("messageCreate", async (msg) => {
         });
       }
 		}else if(args[1] === 'save'){
-            const link = args[3];
-            const check = await checkEnableLink(msg, link);
-            if(!check){
-                msgInstruction(msg, 'me');
-                return;
-            }       
-            connection.query(
-                `INSERT INTO nft (nickname, link) VALUES ("${args[2]}", "${args[3]}")`,
-                function (error, results, fields) {
-                    if (error) throw error;
-                    msg.reply("Saved")
-                    msgEmbed4Nft(msg, link, args[2]);
-                }
-            );
+      const link = args[3];
+      const check = await checkEnableLink(msg, link);
+      if(!check){
+        msgInstruction(msg, 'me');
+        return;
+      }       
+      connection.query(
+        `INSERT INTO nft (nickname, link) VALUES ("${args[2]}", "${args[3]}")`,
+        function (error, results, fields) {
+          if (error) throw error;
+          msg.reply("Saved")
+          msgEmbed4Nft(msg, link, args[2]);
         }
+      );
+    }
     }else if (msg.content.startsWith(".coin")) {
-        const args = msg.content.split(" ");
-        if(args.length > 2 || args.length === 1){
-            msgInstruction(msg, 'coin');
-            return;
-        }
-        const sig = args.pop();
-        const upperSig = sig.toUpperCase();
-        console.log(upperSig)
-
-        msgEmbed4Coin(msg, upperSig);
-
+      const args = msg.content.split(" ");
+      if(args.length > 2 || args.length === 1){
+          msgInstruction(msg, 'coin');
+          return;
+      }
+      const sig = args.pop();
+      const upperSig = sig.toUpperCase();
+      console.log(upperSig)
+      msgEmbed4Coin(msg, upperSig);
     }else if (msg.content.startsWith(".exit")) {
         msg.reply("The server will shut down")
+    }else if (msg.content.startsWith(".op")) {
+      msg.reply("살려내라 양복봇")
     }
   });
 

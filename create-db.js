@@ -10,7 +10,6 @@ const connection = mysql.createConnection({
 connection.connect();
 
 exports.create = () => {
-  //@@@@@@@@ 데이터베이스 생성 @@@@@@@@
   connection.query(
     'CREATE DATABASE if not exists magiceden',
     (error, results, fields) => {
@@ -21,7 +20,6 @@ exports.create = () => {
     if (error) throw error;
   });
 
-  //@@@@@@@@ 테이블 생성 @@@@@@@@
   connection.query(
     'CREATE TABLE if not exists nft(id int NOT NULL AUTO_INCREMENT PRIMARY KEY, nickname varchar(255), link varchar(255), lastCallPrice float(5,2))',
     function (error, results, fields) {
