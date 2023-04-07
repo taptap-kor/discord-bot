@@ -13,5 +13,6 @@
 // ===================해결해야할내용====================== //
 
 // 1. 매직에덴 uri에서 '/ko' 내용이 추가되는 경우가 있음. save는 없어야하므로, /ko 가 들어오면 제거하고 저장해주기
-
+// 2. MYSQL에 일정기간동안 상호작용이 없을경우 아래와 같은 에러가 표시되며 node가 정지됨
+// Error: The client was disconnected by the server because of inactivity. See wait_timeout and interactive_timeout for configuring this behavior. 
 
