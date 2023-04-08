@@ -86,8 +86,6 @@ client.on("messageCreate", async (msg) => {
       msgEmbed4Coin(msg, upperSig);
     }else if (msg.content.startsWith(".exit")) {
         msg.reply("The server will shut down")
-    }else if (msg.content.startsWith(".op")) {
-      msg.reply("살려내라 양복봇")
     }
   });
 
