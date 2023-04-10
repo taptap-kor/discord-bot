@@ -174,3 +174,4 @@ module.exports = {
     msgEmbed4Coin,
     msgEmbed4Nft,
 }
+

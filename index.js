@@ -90,7 +90,7 @@ client.on("messageCreate", async (msg) => {
   });
 
   const checkEnableLink = async (msg, link) => {
-    const regex = /^https:\/\/magiceden\.io\/marketplace\/\w+$/;
+    const regex = /^https?:\/\/magiceden\.io\/(?:ko\/)?marketplace\/\w+$/;
     if (!regex.test(link)) {
         return false;
     }
