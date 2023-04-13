@@ -1,8 +1,3 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const axios = require("axios");
-const cheerio = require('cheerio');
-const request = require('request');
 const mysql = require('mysql2');
 const CreateDB = require('./create-db.js');
 require('dotenv').config();
